@@ -1,4 +1,4 @@
-# textencrypt
+# TextEncrypt
 
 USAGE: This app is designed to encrypt and decrypt text
 
