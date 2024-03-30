@@ -19,7 +19,7 @@ IV is 0x639B248E
 
 
 ROADMAP:
-DONE	Encrypt/Decrypt text message with RC4 algorithm
-DONE	Encrypt/Decrypt message contained in a txt file
-DONE	Randomize first IV
-      Multikey to encrypt/decrypt message (first generated keystream is with key #1 and other keystreams are with other keys)
+- DONE	Encrypt/Decrypt text message with RC4 algorithm
+- DONE	Encrypt/Decrypt message contained in a txt file
+- DONE	Randomize first IV
+- Multikey to encrypt/decrypt message (first generated keystream is with key #1 and other keystreams are with other keys)
