@@ -2,7 +2,7 @@
 
 USAGE: This app is designed to encrypt and decrypt text
 
-INSTRUCTIONS: 
+### INSTRUCTIONS
 1. To run the app, launch RC4-APP.exe. Enter a 10-character encryption key in hexadecimal format (0-9, A-F).
 2. Select an option (1-3). 
 	- Option 1 lets you enter text from within the console and then encrypts that text into console.encrypted file.
@@ -18,7 +18,7 @@ i.e. encrypted message:
 IV is 0x639B248E
 
 
-ROADMAP:
+### ROADMAP:
 - DONE	Encrypt/Decrypt text message with RC4 algorithm
 - DONE	Encrypt/Decrypt message contained in a txt file
 - DONE	Randomize first IV
