@@ -138,7 +138,7 @@ static void cipher(vector<unsigned char> cipherVector) {
     if (cipherVector.size() <= availableKeystream) {
         if (cipherVector.size() < availableKeystream) {
             for (int i = 0; i < (availableKeystream - cipherVector.size()); i++) {
-                //ajout de bytes nuls (espaces) pour standardiser la taille du message crypté (sécurité contre plaintext attack)
+                //ajout de bytes nuls (espaces) pour standardiser la taille du message cryptÃ© (sÃ©curitÃ© contre plaintext attack)
                 cipherVector.push_back(0x00);
             }
         }
@@ -147,7 +147,7 @@ static void cipher(vector<unsigned char> cipherVector) {
             cipherText.push_back(cipherVector[i] ^ rc4_keystream[i + 256]);
     }
     else {
-        //Si le texte est trop long, il faut regénerer un IV et un keystream à chaque 213 bytes
+        //Si le texte est trop long, il faut regÃ©nerer un IV et un keystream Ã  chaque 213 bytes
         double numberOfGeneratedKeystream = ceil(cipherVector.size() / static_cast<double>(availableKeystream));
 
         for (int i = 0; i < numberOfGeneratedKeystream; i++) {
@@ -303,6 +303,7 @@ int main() {
         string filenameToEncrypt;
         string filenameEnc;
         string text;
+        char c;
 
         cout << "Enter filename to encrypt: ";
         cin.ignore();
@@ -313,7 +314,9 @@ int main() {
         fstream textFileClear(filenameToEncrypt, ios::in);
         fstream textFileEncrypted(filenameEnc, ios::out | ios::binary);
 
-        getline(textFileClear, text);
+        while(textFileClear.get(c) {
+            text += c;
+        }
         clearTextAppend(text, option);
 
         cipher(cipherVector);
