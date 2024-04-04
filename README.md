@@ -18,8 +18,11 @@ i.e. encrypted message:
 IV is 0x639B248E
 
 
-### ROADMAP:
+### ROADMAP
 - DONE	Encrypt/Decrypt text message with RC4 algorithm
 - DONE	Encrypt/Decrypt message contained in a txt file
 - DONE	Randomize first IV
 - Multikey to encrypt/decrypt message (first generated keystream is with key #1 and other keystreams are with other keys)
+
+### Game
+Find a way to access the message contained in game-txt.encrypted. The rest of the info is contained in it ;)
