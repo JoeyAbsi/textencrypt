@@ -22,7 +22,9 @@ IV is 0x639B248E
 - DONE	Encrypt/Decrypt text message with RC4 algorithm
 - DONE	Encrypt/Decrypt message contained in a txt file
 - DONE	Randomize first IV
-- Multikey to encrypt/decrypt message (first generated keystream is with key #1 and other keystreams are with other keys)
+- DONE	Multikey to encrypt/decrypt message (first generated keystream is with key #0 and other keystreams are with other keys)
 
-### Game
-Find a way to access the message contained in game-txt.encrypted. The rest of the info is contained in it ;)
+### MultiKey Encrypt
+Place the file "keys.txt" in the same directory of the .exe file and replace the keys with 10 characters hex keys.
+DO NOT write keys in a different format than HEX as the program may crash
+The program will automatically encrypt each part of the message (each 213 hex characters) with a different key until the end key is reached and the rest of the message will be encrypt with this key
