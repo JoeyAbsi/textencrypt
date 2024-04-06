@@ -21,6 +21,7 @@ uint8_t rc4_keystream[469] = {};
 vector<unsigned char> cipherText;
 vector<unsigned char> clearText;
 vector<unsigned char> cipherVector;
+vector<string> keysRead;
 uint8_t d_mi[4] = {};
 uint8_t rc4_key[9] = {};
 bool firstRun = true;
@@ -28,14 +29,14 @@ uint32_t lfsr = 0;
 uint64_t key;
 
 static void keyAppend(uint64_t key) {
-    // Appends encryption key (uint64_t) to key array 
+    /* Appends encryption key (uint64_t) to key array */
 
     for (int i = 0; i < 5; i++)
         rc4_key[i] = (key >> (40 - (i + 1) * 8)) & 0xFF;
 }
 
 static void rc4_dmr(uint64_t key, uint8_t d_mi[4]) {
-    // Generates RC4 keystream used to encrypt/decrypt data with key array
+    /* Generates RC4 keystream used to encrypt/decrypt data with key array */
 
     uint8_t  S[256], K[256];
     uint32_t i, j, k;
@@ -78,7 +79,7 @@ static void rc4_dmr(uint64_t key, uint8_t d_mi[4]) {
 }
 
 static void LFSR() {
-    // Generates first IV randomly and computes next IVs from the first IV
+    /* Generates first IV randomly and computes next IVs from the first IV */
 
     if (firstRun) {
         //if the algo is ran the first time, generate a random IV
@@ -105,7 +106,7 @@ static void LFSR() {
 }
 
 static void clearTextAppend(string clearText, int option) {
-    // Store ASCII values of text into cipherVector
+    /* Store ASCII values of text into cipherVector */
     
     if ((option == 1) || (option == 2)) {
         for (char c : clearText)
@@ -121,56 +122,114 @@ static void clearTextAppend(string clearText, int option) {
 }
 
 static string textAppend(vector<unsigned char> cipherVector) {
-    // Reconstruct original string from cipherVector
+    /* Reconstruct original string from cipherVector */
 
     string originalString(cipherVector.begin(), cipherVector.end());
     return originalString;
 }
 
 static void cipher(vector<unsigned char> cipherVector) {
-    // Encrypts data
+    /* Encrypts data */
 
     int availableKeystream = 213; //keystream effective bytes: 469-256 = 213
+    int j = 0;
 
-    LFSR();
-    rc4_dmr(key, d_mi);
+    if (keysRead.size() != 0) {
+        // Multikey encrypt enable
+        istringstream stream(keysRead[0]);
+        stream >> hex >> key;
+        
+        // Initialize keystream with key #0
+        LFSR();
+        rc4_dmr(key, d_mi);
 
-    if (cipherVector.size() <= availableKeystream) {
-        if (cipherVector.size() < availableKeystream) {
-            for (int i = 0; i < (availableKeystream - cipherVector.size()); i++) {
-                //ajout de bytes nuls (espaces) pour standardiser la taille du message cryptÃ© (sÃ©curitÃ© contre plaintext attack)
-                cipherVector.push_back(0x00);
+        if (cipherVector.size() <= availableKeystream) {
+            if (cipherVector.size() < availableKeystream) {
+                for (int i = 0; i < (availableKeystream - cipherVector.size()); i++) {
+                    //ajout de bytes nuls pour standardiser la taille du message crypté (sécurité contre plaintext attack)
+                    cipherVector.push_back(0x00);
+                }
+            }
+
+            for (int i = 0; i < cipherVector.size(); i++)
+                cipherText.push_back(cipherVector[i] ^ rc4_keystream[i + 256]);
+        }
+        else {
+            //Si le texte est trop long, il faut regénerer un IV et un keystream à chaque 213 bytes
+            double numberOfGeneratedKeystream = ceil(cipherVector.size() / static_cast<double>(availableKeystream));
+
+            for (int i = 0; i < numberOfGeneratedKeystream; i++) {
+                int maxJ = (i == numberOfGeneratedKeystream - 1) ? cipherVector.size() % availableKeystream : availableKeystream;
+
+                for (int j = 0; j < maxJ; j++)
+                    cipherText.push_back(cipherVector[(i * availableKeystream) + j] ^ rc4_keystream[j + 256]);
+
+                if (i < numberOfGeneratedKeystream - 1) {
+                    if (i >= keysRead.size()) {
+                        //if not enough keys, then encrypt th rest of the message with the last key
+                        istringstream stream(keysRead[i - j]);
+                        stream >> hex >> key;
+                        
+                        LFSR();
+                        rc4_dmr(key, d_mi);
+                        j++;
+                    }
+                    else {
+                        istringstream stream(keysRead[i + 1]);
+                        stream >> hex >> key;
+                        
+                        LFSR();
+                        rc4_dmr(key, d_mi);
+                    }
+                }
             }
         }
-        
-        for (int i = 0; i < cipherVector.size(); i++)
-            cipherText.push_back(cipherVector[i] ^ rc4_keystream[i + 256]);
     }
     else {
-        //Si le texte est trop long, il faut regÃ©nerer un IV et un keystream Ã  chaque 213 bytes
-        double numberOfGeneratedKeystream = ceil(cipherVector.size() / static_cast<double>(availableKeystream));
+        // No multikey encrypt :(
+        LFSR();
+        rc4_dmr(key, d_mi);
 
-        for (int i = 0; i < numberOfGeneratedKeystream; i++) {
-            int maxJ = (i == numberOfGeneratedKeystream - 1) ? cipherVector.size() % availableKeystream : availableKeystream;
-            
-            for (int j = 0; j < maxJ; j++)
-                cipherText.push_back(cipherVector[(i* availableKeystream) + j] ^ rc4_keystream[j + 256]);
-            
-            if (i < numberOfGeneratedKeystream - 1) {
-                LFSR();
-                rc4_dmr(key, d_mi);
+        if (cipherVector.size() <= availableKeystream) {
+            if (cipherVector.size() < availableKeystream) {
+                for (int i = 0; i < (availableKeystream - cipherVector.size()); i++) {
+                    //ajout de bytes nuls pour standardiser la taille du message crypté (sécurité contre plaintext attack)
+                    cipherVector.push_back(0x00);
+                }
             }
-        }        
+
+            for (int i = 0; i < cipherVector.size(); i++)
+                cipherText.push_back(cipherVector[i] ^ rc4_keystream[i + 256]);
+        }
+        else {
+            //Si le texte est trop long, il faut regénerer un IV et un keystream à chaque 213 bytes
+            double numberOfGeneratedKeystream = ceil(cipherVector.size() / static_cast<double>(availableKeystream));
+
+            for (int i = 0; i < numberOfGeneratedKeystream; i++) {
+                int maxJ = (i == numberOfGeneratedKeystream - 1) ? cipherVector.size() % availableKeystream : availableKeystream;
+
+                for (int j = 0; j < maxJ; j++)
+                    cipherText.push_back(cipherVector[(i * availableKeystream) + j] ^ rc4_keystream[j + 256]);
+
+                if (i < numberOfGeneratedKeystream - 1) {
+                    LFSR();
+                    rc4_dmr(key, d_mi);
+                }
+            }
+        }
     }
+
+    
 }
 
 static void decipher(vector<unsigned char> cipherVector) {
-    // Decrypts data
+    /* Decrypt data */
 
     uint8_t extractedIV[4] = {};
     vector<unsigned char> cipherTemp;
     int availableKeystream = 213; //469-256 = 213
     double numberOfGeneratedKeystream = ceil(cipherVector.size() / static_cast<double>(availableKeystream));
+    int k = 0;
 
     if (cipherText.size() == 0) {
         cipherText = cipherVector;
@@ -187,32 +246,78 @@ static void decipher(vector<unsigned char> cipherVector) {
     
     for (int j = 0; j < cipherText.size() - 4; j++)
         cipherTemp.push_back(cipherText[j + 4]);
-
-    //Initialize keystream
-    rc4_dmr(key, extractedIV);
     
-    size_t maxI = (cipherText.size() < cipherVector.size()) ? cipherVector.size() : cipherTemp.size();
-    size_t maxI2 = (numberOfGeneratedKeystream > 1) ? availableKeystream : maxI;
+    
+    if (keysRead.size() != 0) {
+        istringstream stream(keysRead[0]);
+        stream >> hex >> key;
 
-    for (int j = 0; j < numberOfGeneratedKeystream; j++)
-    {
-        //Decryption
-        if (numberOfGeneratedKeystream == 1) {
-            for (int i = 0; i < maxI2; i++)
-                clearText.push_back(cipherTemp[i] ^ rc4_keystream[i + 256]);
-        }
-        else if (j == (numberOfGeneratedKeystream - 1)) {
-            for (int i = 0; i < (cipherTemp.size() - availableKeystream *j); i++)
-                clearText.push_back(cipherTemp[i + availableKeystream *j] ^ rc4_keystream[i + 256]);
-        }
-        else {
-            for (int i = 0; i < maxI2; i++)
-                clearText.push_back(cipherTemp[i + j* availableKeystream] ^ rc4_keystream[i + 256]);
-        }
+        rc4_dmr(key, extractedIV);
 
-        //Compute Next IV and generate new keystream
-        LFSR();
-        rc4_dmr(key, d_mi);
+        size_t maxI = (cipherText.size() < cipherVector.size()) ? cipherVector.size() : cipherTemp.size();
+        size_t maxI2 = (numberOfGeneratedKeystream > 1) ? availableKeystream : maxI;
+
+        for (int j = 0; j < numberOfGeneratedKeystream; j++)
+        {
+            //Decryption
+            if (numberOfGeneratedKeystream == 1) {
+                for (int i = 0; i < maxI2; i++)
+                    clearText.push_back(cipherTemp[i] ^ rc4_keystream[i + 256]);
+            }
+            else if (j == (numberOfGeneratedKeystream - 1)) {
+                for (int i = 0; i < (cipherTemp.size() - availableKeystream * j); i++)
+                    clearText.push_back(cipherTemp[i + availableKeystream * j] ^ rc4_keystream[i + 256]);
+            }
+            else {
+                for (int i = 0; i < maxI2; i++)
+                    clearText.push_back(cipherTemp[i + j * availableKeystream] ^ rc4_keystream[i + 256]);
+            }
+
+            //Compute Next IV and generate new keystream with new keys
+            if (j < numberOfGeneratedKeystream - 1) {
+                if (j >= keysRead.size()) {
+                    istringstream stream(keysRead[j - k]);
+                    stream >> hex >> key;
+                    
+                    LFSR();
+                    rc4_dmr(key, d_mi);
+                    k++;
+                }
+                else {
+                    istringstream stream(keysRead[j + 1]);
+                    stream >> hex >> key;
+                    LFSR();
+                    rc4_dmr(key, d_mi);
+                }
+            }
+        }
+    }
+    else {
+        rc4_dmr(key, extractedIV);
+
+        size_t maxI = (cipherText.size() < cipherVector.size()) ? cipherVector.size() : cipherTemp.size();
+        size_t maxI2 = (numberOfGeneratedKeystream > 1) ? availableKeystream : maxI;
+
+        for (int j = 0; j < numberOfGeneratedKeystream; j++)
+        {
+            //Decryption
+            if (numberOfGeneratedKeystream == 1) {
+                for (int i = 0; i < maxI2; i++)
+                    clearText.push_back(cipherTemp[i] ^ rc4_keystream[i + 256]);
+            }
+            else if (j == (numberOfGeneratedKeystream - 1)) {
+                for (int i = 0; i < (cipherTemp.size() - availableKeystream * j); i++)
+                    clearText.push_back(cipherTemp[i + availableKeystream * j] ^ rc4_keystream[i + 256]);
+            }
+            else {
+                for (int i = 0; i < maxI2; i++)
+                    clearText.push_back(cipherTemp[i + j * availableKeystream] ^ rc4_keystream[i + 256]);
+            }
+
+            //Compute Next IV and generate new keystream
+            LFSR();
+            rc4_dmr(key, d_mi);
+        }
     }
 
     //Remove null bytes at the end of message
@@ -223,7 +328,7 @@ static void decipher(vector<unsigned char> cipherVector) {
 }
 
 string getCurrentDateTimeAsString() {
-    // Get date and time and output it as a string
+    /* Get date and time and output it as a string */
 
     auto now = std::chrono::system_clock::now();
     auto time_t_now = std::chrono::system_clock::to_time_t(now);
@@ -234,7 +339,7 @@ string getCurrentDateTimeAsString() {
 }
 
 string filenameExtract(string filename, int option) {
-    // Extract file name from input
+    /* Extract file name from input */
 
     string filenameExtracted;
     size_t dotPos = filename.find(".");
@@ -255,26 +360,47 @@ string filenameExtract(string filename, int option) {
     return filenameExtracted;
 }
 
+static void readKeys(string keysFile) {
+    /* Read keys from txt file and store them */
+    
+    string line;
+    fstream inputFile(keysFile, ios::in);
+    
+    while (getline(inputFile, line)) {
+        if (line.length() <= 10) {
+            line += string(10 - line.length(), '0');
+            keysRead.push_back(line);
+        }
+    }
+    
+}
+
 int main() {
     int option;
     string key2;
+    string keysFile = "keys.txt";
+    
+    readKeys(keysFile);
 
-    cout << "Please enter encryption key in HEX format: 0x";
-    cin >> hex >> key2;
+    if (keysRead.size() == 0) {
+        // If no key file is provided, ask for a key
+        cout << "Please enter encryption key in HEX format: 0x";
+        cin >> hex >> key2;
 
-    if (key2.length() < 10) {
-        //Add zeros if the key provided is under 10 characters
-        key2 += std::string(10 - key2.length(), '0');
-        istringstream stream(key2);
-        stream >> hex >> key;
-    }
-    else if (key2.length() > 10) {
-        cout << "Key input is too long. Exiting program...\n";
-        return 0;
-    }
-    else {
-        istringstream stream(key2);
-        stream >> hex >> key;
+        if (key2.length() < 10) {
+            //Add zeros if the key provided is under 10 characters
+            key2 += string(10 - key2.length(), '0');
+            istringstream stream(key2);
+            stream >> hex >> key;
+        }
+        else if (key2.length() > 10) {
+            cout << "Key input is too long. Exiting program...\n";
+            return 1;
+        }
+        else {
+            istringstream stream(key2);
+            stream >> hex >> key;
+        }
     }
 
     cout << "Select your service:\n1 - Encrypt text from console\n2 - Encrypt from text file\n3 - Decrypt from text file\nSelection: ";
@@ -314,7 +440,7 @@ int main() {
         fstream textFileClear(filenameToEncrypt, ios::in);
         fstream textFileEncrypted(filenameEnc, ios::out | ios::binary);
 
-        while(textFileClear.get(c) {
+        while (textFileClear.get(c)) {
             text += c;
         }
         clearTextAppend(text, option);
