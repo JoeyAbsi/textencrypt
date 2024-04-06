@@ -2,6 +2,8 @@
 
 USAGE: This app is designed to encrypt and decrypt text
 
+https://youtu.be/Kvr1IGADzgA
+
 ### INSTRUCTIONS
 1. To run the app, launch RC4-APP.exe. Enter a 10-character encryption key in hexadecimal format (0-9, A-F).
 2. Select an option (1-3). 
