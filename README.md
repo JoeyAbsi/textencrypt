@@ -2,7 +2,7 @@
 
 USAGE: This app is designed to encrypt and decrypt text
 
-[![DEMO HERE]https://github.com/JoeyAbsi/textencrypt/blob/main/Screenshot%202024-04-05%20222005.png](https://youtu.be/Kvr1IGADzgA)
+[![DEMO HERE](https://github.com/JoeyAbsi/textencrypt/blob/main/Screenshot%202024-04-05%20222005.png)](https://youtu.be/Kvr1IGADzgA)
 
 ### INSTRUCTIONS
 1. To run the app, launch RC4-APP.exe. Enter a 10-character encryption key in hexadecimal format (0-9, A-F).
