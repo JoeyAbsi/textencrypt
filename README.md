@@ -29,4 +29,4 @@ IV is 0x639B248E
 ### MultiKey Encrypt
 - Place the file "keys.txt" in the same directory of the .exe file and replace the keys with 10 characters hex keys
 - DO NOT write keys in a different format than HEX as the program maycrash
-- The program will automatically encrypt each part of the message (each 213 hex characters) with a different key until the end key is reached and the rest of the message will be encrypt with this key
+- The program will automatically encrypt each part of the message (each 213 hex characters) with a different key until the last key is reached and the rest of the message will be encrypted with this key
